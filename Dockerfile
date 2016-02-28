@@ -4,7 +4,7 @@ FROM centos:centos7
 MAINTAINER Lucas Johnson <lucasejohnson@netscape.net>
 
 #Alfresco version
-ALF_URL=http://dl.alfresco.com/release/community/201602-build-00005/alfresco-community-installer-201602-linux-x64.bin
+ENV ALF_URL=http://dl.alfresco.com/release/community/201602-build-00005/alfresco-community-installer-201602-linux-x64.bin
 
 # install some necessary/desired RPMs and get updates
 RUN yum update -y && \
