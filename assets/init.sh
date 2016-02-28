@@ -8,8 +8,12 @@ CATALINA_HOME=$ALF_HOME/tomcat
 ALFRESCO_HOSTNAME=${ALFRESCO_HOSTNAME:-127.0.0.1}
 ALFRESCO_PROTOCOL=${ALFRESCO_PROTOCOL:-http}
 ALFRESCO_PORT=${ALFRESCO_PORT:-8080}
-if [ "${ALFRESCO_PROTOCOL,,}" = "https" ]; then
-  ALFRESCO_PORT=${ALFRESCO_PORT:-8443}
+if [ "${ALFRESCO_PROTOCOL}" == "https" ]; then
+  if [ "${ALFRESCO_REVERSE_PROXY}" == "false" ]; then
+    ALFRESCO_PORT=${ALFRESCO_PORT:-8443}
+  else
+    ALFRESCO_PORT=${ALFRESCO_PORT:-8080}
+  fi
 else
   ALFRESCO_PORT=${ALFRESCO_PORT:-8080}
 fi
@@ -17,31 +21,61 @@ fi
 SHARE_HOSTNAME=${SHARE_HOSTNAME:-127.0.0.1}
 SHARE_PROTOCOL=${SHARE_PROTOCOL:-http}
 SHARE_PORT=${SHARE_PORT:-8080}
-if [ "${SHARE_PROTOCOL,,}" = "https" ]; then
-  SHARE_PORT=${SHARE_PORT:-8443}
+if [ "${SHARE_PROTOCOL}" == "https" ]; then
+  if [ "${SHARE_REVERSE_PROXY}" == "false" ]; then
+    SHARE_PORT=${SHARE_PORT:-8443}
+  else
+    SHARE_PORT=${SHARE_PORT:-8080}
+  fi
 else
   SHARE_PORT=${SHARE_PORT:-8080}
 fi
 
-DB_KIND=${DB_KIND:-postgresql}
-DB_USERNAME=${DB_USERNAME:-alfresco}
-DB_PASSWORD=${DB_PASSWORD:-admin}
-DB_NAME=${DB_NAME:-alfresco}
-DB_HOST=${DB_HOST:-localhost}
-case "${DB_KIND,,}" in
-  postgresql)
-    DB_DRIVER=org.postgresql.Driver
-    DB_PORT=${DB_PORT:-5432}
-    ;;
-  mysql)
-    DB_DRIVER=org.gjt.mm.mysql.Driver
-    DB_PORT=${DB_PORT:-3306}
+# We look if official postgresql is linked
+if [ "${DB_ENV_POSTGRES_USER}X" != "X" ]; then
+  DB_KIND=postgresql
+  DB_USERNAME=${DB_ENV_POSTGRES_USER}
+  DB_PASSWORD=${DB_ENV_POSTGRES_PASSWORD}
+  DB_NAME=${DB_ENV_POSTGRES_DB}
+  DB_HOST=db
+  DB_PORT=5432
+else
+  # We look if official MySQL is linked
+  if [ "${DB_ENV_MYSQL_USER}X" != "X" ]; then
+    B_KIND=mysql
+    DB_USERNAME=${DB_ENV_MYSQL_USER}
+    DB_PASSWORD=${DB_ENV_MYSQL_PASSWORD}
+    DB_NAME=${DB_ENV_MYSQL_DATABASE}
+    DB_HOST=db
+    DB_PORT=3306
     DB_CONN_PARAMS=${DB_CONN_PARAMS:-?useSSL=false}
-    ;;
-  *)
-    echo "Database kind '$DB_KIND' not supported!"
-    exit 1
-esac
+
+    # Dans les autres cas
+  else
+    DB_KIND=${DB_KIND:-postgresql}
+    DB_USERNAME=${DB_USERNAME:-alfresco}
+    DB_PASSWORD=${DB_PASSWORD:-admin}
+    DB_NAME=${DB_NAME:-alfresco}
+    DB_HOST=${DB_HOST:-localhost}
+    case "${DB_KIND,,}" in
+      postgresql)
+        DB_DRIVER=org.postgresql.Driver
+        DB_PORT=${DB_PORT:-5432}
+        ;;
+      mysql)
+        DB_DRIVER=org.gjt.mm.mysql.Driver
+        DB_PORT=${DB_PORT:-3306}
+        DB_CONN_PARAMS=${DB_CONN_PARAMS:-?useSSL=false}
+        ;;
+      *)
+        echo "Database kind '$DB_KIND' not supported!"
+        exit 1
+    esac
+
+  fi
+fi
+
+
 
 SYSTEM_SERVERMODE=${SYSTEM_SERVERMODE:-PRODUCTION}
 
@@ -97,6 +131,8 @@ function tweak_alfresco {
 
   cfg_replace_option alfresco.host $ALFRESCO_HOSTNAME $ALFRESCO_GLOBAL_PROPERTIES
   cfg_replace_option share.host $SHARE_HOSTNAME $ALFRESCO_GLOBAL_PROPERTIES
+
+  cfg_replace_option system.serverMode $SYSTEM_SERVERMODE $ALFRESCO_GLOBAL_PROPERTIES
 
   #db.schema.update=true
   cfg_replace_option db.driver $DB_DRIVER $ALFRESCO_GLOBAL_PROPERTIES
