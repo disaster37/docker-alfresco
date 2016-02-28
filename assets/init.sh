@@ -133,6 +133,8 @@ function tweak_alfresco {
   cfg_replace_option share.host $SHARE_HOSTNAME $ALFRESCO_GLOBAL_PROPERTIES
 
   cfg_replace_option system.serverMode $SYSTEM_SERVERMODE $ALFRESCO_GLOBAL_PROPERTIES
+  cfg_replace_option alfresco.protocol  $ALFRESCO_PROTOCOL $ALFRESCO_GLOBAL_PROPERTIES
+  cfg_replace_option share.protocol  $SHARE_PROTOCOL $ALFRESCO_GLOBAL_PROPERTIES
 
   #db.schema.update=true
   cfg_replace_option db.driver $DB_DRIVER $ALFRESCO_GLOBAL_PROPERTIES
